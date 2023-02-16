@@ -1,0 +1,109 @@
+---
+title: "p8451_assignment_5"
+output: html_document
+date: "2023-02-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Part 0: Data Cleaning
+
+### Loading packages and preparing dataset
+
+To proceed with the problem set, the following libraries will be used in addition to base R
+```{r}
+library(tidyverse)
+library(dplyr)
+library(caret)
+library(glmnet)
+library(klaR)
+
+set.seed(123)
+```
+
+The data set is first imported using the `read_csv` function, and is cleaned using the `clean_names` function. The data set is then summarised using the `skim` function. The outcome category `alc_consumption` is converted from a character to a factor variable and the ID variable `x1` is then stripped off. 
+
+```{r}
+alcohol_data = read_csv(file = "data/alcohol_use.csv") %>%
+  janitor::clean_names()
+skimr::skim(alcohol_data)
+
+alcohol_data = 
+  alcohol_data %>%
+  mutate(
+    alc_consumption = factor(alc_consumption, labels = c("Current Use", "Not Current Use"))
+  ) %>%
+  dplyr::select(-x1) %>%
+  na.omit()
+
+skimr::skim(alcohol_data)
+```
+
+The data set `alcohol_data` now has 1885 observations with 8 variables, all of which are numeric except for the outcome variable `alc_consumption`, which was converted into a factor variable. 
+
+### Creating balanced partitions in the data 
+
+The data is then partitioned into training and testing using a 70/30 split by using the function `createDataPartition`. The training and testing data set is generated with an equal proportion of individuals with the outcome of interest, `alc_consumption`. 
+
+```{r}
+train_indices = createDataPartition(y=alcohol_data$alc_consumption, p = 0.7, list = FALSE)
+
+alcohol_train = alcohol_data[train_indices,]
+alcohol_test = alcohol_data[-train_indices,]
+```
+
+## Part 1: Creating and comparing three different models 
+
+The following three models will be created and compared: 
+
+* Elastic net model - a model that chooses alpha and lambda via cross-validation using all of the features
+
+* Traditional logistic regression - a model that uses all the features and traditional logistic regression 
+
+* Lasso model - a lasso model using all of the features
+
+The value of the alpha parameter dictates whether the model is a ride gression, lasso, or elastic net. A value of 0 is the ridge regression, a value of 1 is a lasso, and any value between 0 and 1 will result in an elastic net model. We will use the caret package to select the best values of alpha and lambda via cross-validation. 
+
+### Elastic net model 
+
+To create the elastic net model, we will use the function `tuneLength` to set the number of combinations of different values of alpha and lambda to compare. In this model, we set tunelength to 10 to result 10 values of alpha and 10 values of lambda. We then print the values of alpha and lambda that give the best prediction (the value in which RMSE is most minimised). 
+
+To obtain the model coefficients at the best tune, we use the function `coef`  
+```{r}
+set.seed(123)
+
+en.model = train(
+  alc_consumption ~., data = alcohol_train, method = "glmnet",
+  trControl = trainControl("cv", number = 10), preProc = c("center", "scale"),
+  tuneLength = 10
+)
+
+en.model$bestTune %>%
+  knitr::kable()
+
+coef(en.model$finalModel, en.model$bestTune$lambda) 
+```
+
+The values of alpha and lambda that give the best prediction are XXX and XXX, respectively. 
+
+The function `predict` is then used to make predictions in the test set `alcohol_test`, where the finalModel is fed into the test set to predict. We can then obtain estimates of the prediction performance in the test set using `postResample`
+
+```{r}
+set.seed(123)
+
+en.pred = en.model %>%
+  predict(alcohol_test)
+
+postResample(en.pred, alcohol_test$alc_consumption) %>%
+  knitr::kable()
+```
+
+The accuracy and kappa values for this elastic net model are XXX and XXX, respectively.
+
+### Traditional logistic regression model 
+
+
+
+
