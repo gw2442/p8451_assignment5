@@ -892,11 +892,12 @@ print the values of alpha and lambda that give the best prediction (the
 value in which RMSE is most minimised).</p>
 <p>To obtain the model coefficients at the best tune, we use the
 function <code>coef</code></p>
-<pre class="r"><code>set.seed(123)
-
-en.model = train(
-  alc_consumption ~., data = alcohol_train, method = &quot;glmnet&quot;,
-  trControl = trainControl(&quot;cv&quot;, number = 10), preProc = c(&quot;center&quot;, &quot;scale&quot;),
+<pre class="r"><code>en.model = train(
+  alc_consumption ~., 
+  data = alcohol_train, 
+  method = &quot;glmnet&quot;,
+  trControl = trainControl(&quot;cv&quot;, number = 10), 
+  preProc = c(&quot;center&quot;, &quot;scale&quot;),
   tuneLength = 10
 )
 
@@ -935,9 +936,7 @@ and XXX, respectively.</p>
 the test set <code>alcohol_test</code>, where the finalModel is fed into
 the test set to predict. We can then obtain estimates of the prediction
 performance in the test set using <code>postResample</code></p>
-<pre class="r"><code>set.seed(123)
-
-en.pred = en.model %&gt;%
+<pre class="r"><code>en.pred = en.model %&gt;%
   predict(alcohol_test)
 
 postResample(en.pred, alcohol_test$alc_consumption) %&gt;%
@@ -965,6 +964,88 @@ XXX, respectively.</p>
 </div>
 <div id="traditional-logistic-regression-model" class="section level3">
 <h3>Traditional logistic regression model</h3>
+</div>
+<div id="lasso-model" class="section level3">
+<h3>Lasso model</h3>
+<p>In a lasso model, alpha is set to a value of 1. Cross validation can
+be used to select the best value of lambda. To do this, a grid first
+needs to be created to search lambda. The function <code>tuneGrid</code>
+is used in lieu of <code>tuneLength</code> to fix the alpha value and to
+manually select the best lambda value</p>
+<p>To obtainthe model coefficients at the best tune, we use the function
+<code>coef</code></p>
+<pre class="r"><code>lambda = 10^seq(-3, 3, length = 100)
+
+la.model = train(
+  alc_consumption ~., 
+  data = alcohol_train, 
+  method = &quot;glmnet&quot;, 
+  trControl = trainControl(&quot;cv&quot;, number = 10), 
+  preProc = c (&quot;center&quot;, &quot;scale&quot;),
+  tuneGrid = expand.grid(alpha = 1, lambda = lambda)
+)
+
+la.model$bestTune %&gt;%
+  knitr::kable()</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">alpha</th>
+<th align="right">lambda</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">40</td>
+<td align="right">1</td>
+<td align="right">0.231013</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>coef(la.model$finalModel, la.model$bestTune$lambda) </code></pre>
+<pre><code>## 8 x 1 sparse Matrix of class &quot;dgCMatrix&quot;
+##                                 s1
+## (Intercept)             -0.1329242
+## neurotocism_score        .        
+## extroversion_score       .        
+## openness_score           .        
+## agreeableness_score      .        
+## conscientiousness_score  .        
+## impulsiveness_score     -0.2730990
+## sens_seeking_score       .</code></pre>
+<p>The values of alpha and lambda that give the best prediction are XXX
+and XXX, respectively.</p>
+<p>Just as with the elastic net model, the function <code>predict</code>
+is then used to make predictions in the test set
+<code>alcohol_test</code>, where the finalModel is fed into the test set
+to predict. We can then obtain estimates of the prediction performance
+in the test set using <code>postResample</code></p>
+<pre class="r"><code>la.pred = la.model %&gt;%
+  predict(alcohol_test)
+
+postResample(la.pred, alcohol_test$alc_consumption) %&gt;%
+  knitr::kable()</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left"></th>
+<th align="right">x</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Accuracy</td>
+<td align="right">0.8548673</td>
+</tr>
+<tr class="even">
+<td align="left">Kappa</td>
+<td align="right">0.7028109</td>
+</tr>
+</tbody>
+</table>
+<p>The accuracy and kappa values for this elastic net model are XXX and
+XXX, respectively.</p>
 </div>
 </div>
 

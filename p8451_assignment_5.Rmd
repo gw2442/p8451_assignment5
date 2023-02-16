@@ -72,11 +72,12 @@ To create the elastic net model, we will use the function `tuneLength` to set th
 
 To obtain the model coefficients at the best tune, we use the function `coef`  
 ```{r}
-set.seed(123)
-
 en.model = train(
-  alc_consumption ~., data = alcohol_train, method = "glmnet",
-  trControl = trainControl("cv", number = 10), preProc = c("center", "scale"),
+  alc_consumption ~., 
+  data = alcohol_train, 
+  method = "glmnet",
+  trControl = trainControl("cv", number = 10), 
+  preProc = c("center", "scale"),
   tuneLength = 10
 )
 
@@ -91,8 +92,6 @@ The values of alpha and lambda that give the best prediction are XXX and XXX, re
 The function `predict` is then used to make predictions in the test set `alcohol_test`, where the finalModel is fed into the test set to predict. We can then obtain estimates of the prediction performance in the test set using `postResample`
 
 ```{r}
-set.seed(123)
-
 en.pred = en.model %>%
   predict(alcohol_test)
 
@@ -104,6 +103,47 @@ The accuracy and kappa values for this elastic net model are XXX and XXX, respec
 
 ### Traditional logistic regression model 
 
+```{r}
+
+```
+
+### Lasso model
+
+In a lasso model, alpha is set to a value of 1. Cross validation can be used to select the best value of lambda. To do this, a grid first needs to be created to search lambda. The function `tuneGrid` is used in lieu of `tuneLength` to fix the alpha value and to manually select the best lambda value
+
+To obtainthe model coefficients at the best tune, we use the function `coef`
+
+```{r}
+lambda = 10^seq(-3, 3, length = 100)
+
+la.model = train(
+  alc_consumption ~., 
+  data = alcohol_train, 
+  method = "glmnet", 
+  trControl = trainControl("cv", number = 10), 
+  preProc = c ("center", "scale"),
+  tuneGrid = expand.grid(alpha = 1, lambda = lambda)
+)
+
+la.model$bestTune %>%
+  knitr::kable()
+
+coef(la.model$finalModel, la.model$bestTune$lambda) 
+```
+
+The values of alpha and lambda that give the best prediction are XXX and XXX, respectively. 
+
+Just as with the elastic net model, the function `predict` is then used to make predictions in the test set `alcohol_test`, where the finalModel is fed into the test set to predict. We can then obtain estimates of the prediction performance in the test set using `postResample`
+
+```{r}
+la.pred = la.model %>%
+  predict(alcohol_test)
+
+postResample(la.pred, alcohol_test$alc_consumption) %>%
+  knitr::kable()
+```
+
+The accuracy and kappa values for this elastic net model are XXX and XXX, respectively.
 
 
 
