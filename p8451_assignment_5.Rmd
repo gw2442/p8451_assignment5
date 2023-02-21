@@ -19,6 +19,7 @@ library(dplyr)
 library(caret)
 library(glmnet)
 library(klaR)
+library(pscl)
 
 set.seed(123)
 ```
@@ -72,6 +73,7 @@ To create the elastic net model, we will use the function `tuneLength` to set th
 
 To obtain the model coefficients at the best tune, we use the function `coef`  
 ```{r}
+set.seed(123)
 en.model = train(
   alc_consumption ~., 
   data = alcohol_train, 
@@ -87,11 +89,12 @@ en.model$bestTune %>%
 coef(en.model$finalModel, en.model$bestTune$lambda) 
 ```
 
-The values of alpha and lambda that give the best prediction are XXX and XXX, respectively. 
+The values of alpha and lambda that give the best prediction are 0.7 and 0.2578427, respectively. This model demonstrates that impulsiveness_score is the strongest predictor for current alcohol consumption. It negatively predicts `alc_consupmtion`. 
 
 The function `predict` is then used to make predictions in the test set `alcohol_test`, where the finalModel is fed into the test set to predict. We can then obtain estimates of the prediction performance in the test set using `postResample`
 
 ```{r}
+set.seed(123)
 en.pred = en.model %>%
   predict(alcohol_test)
 
@@ -99,21 +102,45 @@ postResample(en.pred, alcohol_test$alc_consumption) %>%
   knitr::kable()
 ```
 
-The accuracy and kappa values for this elastic net model are XXX and XXX, respectively.
+The accuracy and kappa values for this elastic net model are 0.8548673 and 0.7028109, respectively.
 
 ### Traditional logistic regression model 
 
-```{r}
+To create a logistic regression model, we will use the function `glm` and specify family = `binomial` so taht R fits a logsitic regression model to the training data set. 
 
+```{r}
+set.seed(123)
+log.model = glm(alc_consumption ~ neurotocism_score +
+                  extroversion_score +
+                  openness_score + 
+                  agreeableness_score +
+                  conscientiousness_score + 
+                  impulsiveness_score +
+                  sens_seeking_score, 
+                  family = "binomial",
+                  data = alcohol_train)
+
+summary(log.model)
 ```
+
+The summary of `log.model` illustrates that for every one unit increase in `impulsiveness_score`, there is an average decrease of 1.73910 in the log odds of `alc_consumption`. The p-values of the model indicate that `extroversion_score`, `impulsiveness_score`, and `sens_seeking_score` are predictor variables with significant p-values (p < 0.05). 
+
+To asess the model fit, we can compute the McFadden's R^2, which ranges from 0 to just under 1. Values close to 0 indicate a model with no low predictive power. Values over 0.40 indicate a model that fits the data well. To compute McFadden's R^2 for the logistic regression model, we use the `pR2` function from the pscl package. 
+
+```{r}
+pscl::pR2(log.model)
+```
+
+The model has a McFadden's R^2 value of 0.333782, indicating the model does not fit the data very well and has a relatively low predictive power. 
 
 ### Lasso model
 
 In a lasso model, alpha is set to a value of 1. Cross validation can be used to select the best value of lambda. To do this, a grid first needs to be created to search lambda. The function `tuneGrid` is used in lieu of `tuneLength` to fix the alpha value and to manually select the best lambda value
 
-To obtainthe model coefficients at the best tune, we use the function `coef`
+To obtain the model coefficients at the best tune, we use the function `coef`
 
 ```{r}
+set.seed(123)
 lambda = 10^seq(-3, 3, length = 100)
 
 la.model = train(
@@ -131,11 +158,12 @@ la.model$bestTune %>%
 coef(la.model$finalModel, la.model$bestTune$lambda) 
 ```
 
-The values of alpha and lambda that give the best prediction are XXX and XXX, respectively. 
+The values of alpha and lambda that give the best prediction are 1 and 0.231013, respectively. 
 
 Just as with the elastic net model, the function `predict` is then used to make predictions in the test set `alcohol_test`, where the finalModel is fed into the test set to predict. We can then obtain estimates of the prediction performance in the test set using `postResample`
 
 ```{r}
+set.seed(123)
 la.pred = la.model %>%
   predict(alcohol_test)
 
@@ -145,5 +173,17 @@ postResample(la.pred, alcohol_test$alc_consumption) %>%
 
 The accuracy and kappa values for this elastic net model are XXX and XXX, respectively.
 
+Based off of these three models, the model most appropriate for the final model is XXX. Testing the logistic regression model revealed that it had a relatively low predictive power. Comparing the elastic net and lasso model revealed that the XXX model is more appropriate, as it's accuracy value is higher.
 
+## Part 2: Applying final model to the test set
+
+```{r}
+control_settings = trainControl(method = 'cv')
+```
+
+
+
+## Part 3: Real World Application
+
+This analysis could directly address the research question of what personality traits are most associated with high alcohol consumption. It can help identify which individuals are considered at high risk for regularly consuming alcohol, allowing proper health interventions to be made. Alcohol consumption is associated with a wide number of diseases and health issues such as cardiovascular and liver disease. Understanding which individuals are at higher risk for consumption of alcohol can help doctors and public health officials understand who is at risk and what interventions can be proposed before alcohol consumption manifests into larger, more pressing health issues. 
 

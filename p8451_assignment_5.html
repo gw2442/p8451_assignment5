@@ -410,6 +410,13 @@ library(caret)</code></pre>
 ## The following object is masked from &#39;package:dplyr&#39;:
 ## 
 ##     select</code></pre>
+<pre class="r"><code>library(pscl)</code></pre>
+<pre><code>## Classes and Methods for R developed in the
+## Political Science Computational Laboratory
+## Department of Political Science
+## Stanford University
+## Simon Jackman
+## hurdle and zeroinfl functions by Achim Zeileis</code></pre>
 <pre class="r"><code>set.seed(123)</code></pre>
 <p>The data set is first imported using the <code>read_csv</code>
 function, and is cleaned using the <code>clean_names</code> function.
@@ -892,7 +899,8 @@ print the values of alpha and lambda that give the best prediction (the
 value in which RMSE is most minimised).</p>
 <p>To obtain the model coefficients at the best tune, we use the
 function <code>coef</code></p>
-<pre class="r"><code>en.model = train(
+<pre class="r"><code>set.seed(123)
+en.model = train(
   alc_consumption ~., 
   data = alcohol_train, 
   method = &quot;glmnet&quot;,
@@ -930,13 +938,16 @@ en.model$bestTune %&gt;%
 ## conscientiousness_score  .        
 ## impulsiveness_score     -0.3681763
 ## sens_seeking_score       .</code></pre>
-<p>The values of alpha and lambda that give the best prediction are XXX
-and XXX, respectively.</p>
+<p>The values of alpha and lambda that give the best prediction are 0.7
+and 0.2578427, respectively. This model demonstrates that
+impulsiveness_score is the strongest predictor for current alcohol
+consumption. It negatively predicts <code>alc_consupmtion</code>.</p>
 <p>The function <code>predict</code> is then used to make predictions in
 the test set <code>alcohol_test</code>, where the finalModel is fed into
 the test set to predict. We can then obtain estimates of the prediction
 performance in the test set using <code>postResample</code></p>
-<pre class="r"><code>en.pred = en.model %&gt;%
+<pre class="r"><code>set.seed(123)
+en.pred = en.model %&gt;%
   predict(alcohol_test)
 
 postResample(en.pred, alcohol_test$alc_consumption) %&gt;%
@@ -959,11 +970,75 @@ postResample(en.pred, alcohol_test$alc_consumption) %&gt;%
 </tr>
 </tbody>
 </table>
-<p>The accuracy and kappa values for this elastic net model are XXX and
-XXX, respectively.</p>
+<p>The accuracy and kappa values for this elastic net model are
+0.8548673 and 0.7028109, respectively.</p>
 </div>
 <div id="traditional-logistic-regression-model" class="section level3">
 <h3>Traditional logistic regression model</h3>
+<p>To create a logistic regression model, we will use the function
+<code>glm</code> and specify family = <code>binomial</code> so taht R
+fits a logsitic regression model to the training data set.</p>
+<pre class="r"><code>set.seed(123)
+log.model = glm(alc_consumption ~ neurotocism_score +
+                  extroversion_score +
+                  openness_score + 
+                  agreeableness_score +
+                  conscientiousness_score + 
+                  impulsiveness_score +
+                  sens_seeking_score, 
+                  family = &quot;binomial&quot;,
+                  data = alcohol_train)
+
+summary(log.model)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = alc_consumption ~ neurotocism_score + extroversion_score + 
+##     openness_score + agreeableness_score + conscientiousness_score + 
+##     impulsiveness_score + sens_seeking_score, family = &quot;binomial&quot;, 
+##     data = alcohol_train)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -1.8635  -0.7691  -0.2402   0.6785   3.4118  
+## 
+## Coefficients:
+##                         Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)             -0.19863    0.07155  -2.776   0.0055 ** 
+## neurotocism_score       -0.15851    0.08316  -1.906   0.0566 .  
+## extroversion_score      -0.37253    0.08956  -4.160 3.18e-05 ***
+## openness_score          -0.06466    0.08164  -0.792   0.4284    
+## agreeableness_score     -0.11425    0.07772  -1.470   0.1416    
+## conscientiousness_score  0.06383    0.08737   0.731   0.4651    
+## impulsiveness_score     -1.73910    0.12488 -13.926  &lt; 2e-16 ***
+## sens_seeking_score      -0.23074    0.10167  -2.269   0.0232 *  
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 1824.3  on 1319  degrees of freedom
+## Residual deviance: 1215.4  on 1312  degrees of freedom
+## AIC: 1231.4
+## 
+## Number of Fisher Scoring iterations: 5</code></pre>
+<p>The summary of <code>log.model</code> illustrates that for every one
+unit increase in <code>impulsiveness_score</code>, there is an average
+decrease of 1.73910 in the log odds of <code>alc_consumption</code>. The
+p-values of the model indicate that <code>extroversion_score</code>,
+<code>impulsiveness_score</code>, and <code>sens_seeking_score</code>
+are predictor variables with significant p-values (p &lt; 0.05).</p>
+<p>To asess the model fit, we can compute the McFadden’s R^2, which
+ranges from 0 to just under 1. Values close to 0 indicate a model with
+no low predictive power. Values over 0.40 indicate a model that fits the
+data well. To compute McFadden’s R^2 for the logistic regression model,
+we use the <code>pR2</code> function from the pscl package.</p>
+<pre class="r"><code>pscl::pR2(log.model)</code></pre>
+<pre><code>## fitting null model for pseudo-r2</code></pre>
+<pre><code>##          llh      llhNull           G2     McFadden         r2ML         r2CU 
+## -607.6904232 -912.1507779  608.9207093    0.3337829    0.3695387    0.4934184</code></pre>
+<p>The model has a McFadden’s R^2 value of 0.333782, indicating the
+model does not fit the data very well and has a relatively low
+predictive power.</p>
 </div>
 <div id="lasso-model" class="section level3">
 <h3>Lasso model</h3>
@@ -972,9 +1047,10 @@ be used to select the best value of lambda. To do this, a grid first
 needs to be created to search lambda. The function <code>tuneGrid</code>
 is used in lieu of <code>tuneLength</code> to fix the alpha value and to
 manually select the best lambda value</p>
-<p>To obtainthe model coefficients at the best tune, we use the function
-<code>coef</code></p>
-<pre class="r"><code>lambda = 10^seq(-3, 3, length = 100)
+<p>To obtain the model coefficients at the best tune, we use the
+function <code>coef</code></p>
+<pre class="r"><code>set.seed(123)
+lambda = 10^seq(-3, 3, length = 100)
 
 la.model = train(
   alc_consumption ~., 
@@ -1014,14 +1090,15 @@ la.model$bestTune %&gt;%
 ## conscientiousness_score  .        
 ## impulsiveness_score     -0.2730990
 ## sens_seeking_score       .</code></pre>
-<p>The values of alpha and lambda that give the best prediction are XXX
-and XXX, respectively.</p>
+<p>The values of alpha and lambda that give the best prediction are 1
+and 0.231013, respectively.</p>
 <p>Just as with the elastic net model, the function <code>predict</code>
 is then used to make predictions in the test set
 <code>alcohol_test</code>, where the finalModel is fed into the test set
 to predict. We can then obtain estimates of the prediction performance
 in the test set using <code>postResample</code></p>
-<pre class="r"><code>la.pred = la.model %&gt;%
+<pre class="r"><code>set.seed(123)
+la.pred = la.model %&gt;%
   predict(alcohol_test)
 
 postResample(la.pred, alcohol_test$alc_consumption) %&gt;%
@@ -1046,7 +1123,29 @@ postResample(la.pred, alcohol_test$alc_consumption) %&gt;%
 </table>
 <p>The accuracy and kappa values for this elastic net model are XXX and
 XXX, respectively.</p>
+<p>Based off of these three models, the model most appropriate for the
+final model is XXX. Testing the logistic regression model revealed that
+it had a relatively low predictive power. Comparing the elastic net and
+lasso model revealed that the XXX model is more appropriate, as it’s
+accuracy value is higher.</p>
 </div>
+</div>
+<div id="part-2-applying-final-model-to-the-test-set" class="section level2">
+<h2>Part 2: Applying final model to the test set</h2>
+<pre class="r"><code>control_settings = trainControl(method = &#39;cv&#39;)</code></pre>
+</div>
+<div id="part-3-real-world-application" class="section level2">
+<h2>Part 3: Real World Application</h2>
+<p>This analysis could directly address the research question of what
+personality traits are most associated with high alcohol consumption. It
+can help identify which individuals are considered at high risk for
+regularly consuming alcohol, allowing proper health interventions to be
+made. Alcohol consumption is associated with a wide number of diseases
+and health issues such as cardiovascular and liver disease.
+Understanding which individuals are at higher risk for consumption of
+alcohol can help doctors and public health officials understand who is
+at risk and what interventions can be proposed before alcohol
+consumption manifests into larger, more pressing health issues.</p>
 </div>
 
 
