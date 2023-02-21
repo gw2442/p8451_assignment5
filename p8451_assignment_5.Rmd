@@ -89,20 +89,7 @@ en.model$bestTune %>%
 coef(en.model$finalModel, en.model$bestTune$lambda) 
 ```
 
-The values of alpha and lambda that give the best prediction are 0.7 and 0.2578427, respectively. This model demonstrates that impulsiveness_score is the strongest predictor for current alcohol consumption. It negatively predicts `alc_consupmtion`. 
-
-The function `predict` is then used to make predictions in the test set `alcohol_test`, where the finalModel is fed into the test set to predict. We can then obtain estimates of the prediction performance in the test set using `postResample`
-
-```{r}
-set.seed(123)
-en.pred = en.model %>%
-  predict(alcohol_test)
-
-postResample(en.pred, alcohol_test$alc_consumption) %>%
-  knitr::kable()
-```
-
-The accuracy and kappa values for this elastic net model are 0.8548673 and 0.7028109, respectively.
+The values of alpha and lambda that give the best prediction are 0.7 and 0.2578427, respectively. This model demonstrates that impulsiveness_score is the strongest predictor for current alcohol consumptionm, with a value of -0.3681763. It negatively predicts `alc_consupmtion`. 
 
 ### Traditional logistic regression model 
 
@@ -158,30 +145,26 @@ la.model$bestTune %>%
 coef(la.model$finalModel, la.model$bestTune$lambda) 
 ```
 
-The values of alpha and lambda that give the best prediction are 1 and 0.231013, respectively. 
+The values of alpha and lambda that give the best prediction are 1 and 0.231013, respectively. This model demonstrates that impulsiveness_score is the strongest predictor for current alcohol consumption, with a value of -0.2730990. It negatively predicts `alc_consupmtion`. 
 
-Just as with the elastic net model, the function `predict` is then used to make predictions in the test set `alcohol_test`, where the finalModel is fed into the test set to predict. We can then obtain estimates of the prediction performance in the test set using `postResample`
-
-```{r}
-set.seed(123)
-la.pred = la.model %>%
-  predict(alcohol_test)
-
-postResample(la.pred, alcohol_test$alc_consumption) %>%
-  knitr::kable()
-```
-
-The accuracy and kappa values for this elastic net model are XXX and XXX, respectively.
-
-Based off of these three models, the model most appropriate for the final model is XXX. Testing the logistic regression model revealed that it had a relatively low predictive power. Comparing the elastic net and lasso model revealed that the XXX model is more appropriate, as it's accuracy value is higher.
+Based off of these three models, the model most appropriate for the final model is the elastic net Testing the logistic regression model revealed that it had a relatively low predictive power. Comparing the elastic net and lasso model revealed that the elastic net model is more appropriate, as it demonstrates a stronger predictor value for the variable `impulsiveness_score` when predicting alcohol consumption.
 
 ## Part 2: Applying final model to the test set
 
+The function `predict` is then used to make predictions in the test set `alcohol_test`, where the finalModel is fed into the test set to predict. We can then obtain estimates of the prediction performance in the test set using `postResample` and create a confusion matrix with the function `confusionMatrix`. 
+
 ```{r}
-control_settings = trainControl(method = 'cv')
+set.seed(123)
+en.pred = en.model %>%
+  predict(alcohol_test)
+
+postResample(en.pred, alcohol_test$alc_consumption) %>%
+  knitr::kable()
+
+confusionMatrix(en.pred,alcohol_test$alc_consumption)
 ```
 
-
+The accuracy and kappa values for this elastic net model are 0.8548673 and 0.7028109, respectively. The 95% CI for its accuracy value is (0.8231, 0.8829), with a sensitivity of 1.0000 and a specificity of 0.6894. 
 
 ## Part 3: Real World Application
 
